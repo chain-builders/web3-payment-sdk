@@ -14,15 +14,14 @@ contract Contract is Ownable, Pausable {
     struct Order {
         address sender;
         uint256 senderFee;
-        uint96 rate;
-        bool  isFulfilled;
+        uint96 rate;        
         bool isRefunded;
         address refundAddress;
         uint256  amount;
     }
 
     mapping(bytes32 => Order) private orders;
-    mapping(address => uint256) private _nonce;    
+    // mapping(address => uint256) private _nonce;    
 
     constructor (address _usdc) Ownable(msg.sender) {
         require(_usdc != address(0), "Invalid USDC Address");
@@ -61,8 +60,7 @@ contract Contract is Ownable, Pausable {
         orders[orderId] = Order({
             sender: msg.sender,
             senderFee: _senderFee,
-            rate: _rate,
-            isFulfilled: false,
+            rate: _rate,            
             isRefunded: false,
             refundAddress: _refundAddress,
             amount: _amount
@@ -74,11 +72,36 @@ contract Contract is Ownable, Pausable {
             _rate,
             orders[orderId].amount,
             messageHash           
-        );
+        );       
 
-        
+    }    
 
+    function refundOrder(bytes32 orderId) external onlyOwner {
+        Order storage order = orders[orderId];
+        require(!order.isRefunded, "Order already refunded");
+
+        order.isRefunded = true;
+
+        IERC20(usdc).transfer(order.refundAddress, order.amount + order.senderFee);
+
+        emit Event.OrderRefunded(orderId, order.sender, order.amount, order.refundAddress);
     }
 
+    function withdraw(address _to, uint256 _amount) external onlyOwner {
+        require(_to != address(0), "Invalid address");
+        require(_amount > 0, "Amount must be greater than zero");
+
+        IERC20(usdc).transfer(_to, _amount);
+
+        emit Event.Withdraw(_to, _amount);
+    }
+
+    function getOrderInfo(bytes32 _orderId) external view returns (Order memory) {
+		return orders[_orderId];
+	}
+
+    function getContractBalance() external view returns (uint256) {
+        return IERC20(usdc).balanceOf(address(this));
+    }
 
 }
