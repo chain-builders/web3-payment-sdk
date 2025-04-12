@@ -2,12 +2,13 @@
   "name": "paymentsdk",
   "version": "1.0.0",
   "main": "index.js",
+  "packageManager": "npm@10.9.2",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:sdk": "turbo run dev --filter=@paymentsdk/sdk"
   },
   "keywords": [],
   "author": "",
