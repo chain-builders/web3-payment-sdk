@@ -9,99 +9,124 @@ import "./lib/Error.sol";
 import "./lib/Event.sol";
 
 contract Contract is Ownable, Pausable {
-    address public immutable usdc;
+    address public immutable USDC_BASE =
+        0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 
-    struct Order {
-        address sender;
-        uint256 senderFee;
-        uint96 rate;        
-        bool isRefunded;
-        address refundAddress;
-        uint256  amount;
+    mapping(address userAddress => uint256 amount) users;
+
+    constructor() Ownable(msg.sender) {}
+
+    function pauseToggle() external onlyOwner {
+        if (paused()) {
+            _unpause();
+        } else {
+            _pause();
+        }
     }
 
-    mapping(bytes32 => Order) private orders;
-    // mapping(address => uint256) private _nonce;    
+    function pay(address _to, uint256 amount) external whenNotPaused {
+        require(_to != address(0), "Invalid recipient address");
+        require(amount > 0, "Amount must be greater than zero");
 
-    constructor (address _usdc) Ownable(msg.sender) {
-        require(_usdc != address(0), "Invalid USDC Address");
-        usdc = _usdc;
+        uint256 balance = users[msg.sender];
+        require(balance >= amount, "Insufficient balance");
+
+        users[msg.sender] -= amount;
+        users[_to] += amount;
+
+        emit Event.Payment(msg.sender, _to, amount);
     }
 
-    function pause() external onlyOwner {
-        _pause();
+    function payFiat(address _to, uint256 amount) external whenNotPaused {
+        require(_to != address(0), "Invalid recipient address");
+        require(amount > 0, "Amount must be greater than zero");
+
+        uint256 balance = users[msg.sender];
+        require(balance >= amount, "Insufficient balance");
+
+        users[msg.sender] -= amount;
+        users[_to] += amount;
+
+        emit Event.PaymentFiat(msg.sender, _to, amount);
     }
 
-    function onPause() external onlyOwner {
-        _unpause();
+    // function payEth(address _to, uint _amount) external whenNotPaused {
+    //     require(_to != address(0), "Invalid recipient address");
+    //     require(_amount > 0, "Amount must be greater than zero");
+    //     require(address(this).balance >= _amount, "Insufficient contract balance");
+
+    //     (uint256 fee, uint256 amountAfterFee) = calculateFee(_amount);
+
+    //     (bool sent, ) = _to.call{value: amountAfterFee}("");
+    //     require(sent, "ETH transfer failed");
+
+    //     emit Event.Payment(msg.sender, _to, amountAfterFee);
+    // }
+
+    function withdraw(uint256 amount) external whenNotPaused {
+        require(amount > 0, "Amount must be greater than zero");
+        uint256 balance = users[msg.sender];
+        require(balance >= amount, "Insufficient balance");
+
+        uint256 fee = (amount * 5) / 1000; // Calculate 0.5% fee
+        uint256 amountAfterFee = amount - fee;
+
+        IERC20 usdc = IERC20(USDC_BASE);
+        bool success = usdc.transfer(msg.sender, amountAfterFee);
+        require(success, "Transfer failed");
+
+        users[msg.sender] -= amount;
+
+        emit Event.Withdraw(msg.sender, amountAfterFee);
     }
 
-    function createOrder(
-        uint256 _amount,
-        uint96 _rate,
-        uint256 _senderFee,
-        address _refundAddress,
-        string calldata messageHash
-    ) external whenNotPaused returns (bytes32 orderId) {
-        //check that are required
+    function withdrawFiat(uint256 amount) external whenNotPaused {
+        require(amount > 0, "Amount must be greater than zero");
+        uint256 balance = users[msg.sender];
+        require(balance >= amount, "Insufficient balance");
 
-        //validate MessageHash
-    	require(bytes(messageHash).length != 0, 'InvalidMessageHash');
+        uint256 fee = (amount * 5) / 1000; // Calculate 0.5% fee
+        uint256 amountAfterFee = amount - fee;
 
-        // transfer token from msg.sender to contract
-        IERC20(usdc).transferFrom(msg.sender, address(this), _amount + _senderFee);
+        IERC20 usdc = IERC20(USDC_BASE);
+        bool success = usdc.transfer(msg.sender, amountAfterFee);
+        require(success, "Transfer failed");
 
-        // increase users nonce to avoid replay attacks
-		_nonce[msg.sender]++;
+        users[msg.sender] -= amount;
 
-        	// generate transaction id for the transaction
-		orderId = keccak256(abi.encode(msg.sender, _nonce[msg.sender]));
+        emit Event.WithdrawFiat(msg.sender, amountAfterFee);
+    }
+    function deposite(uint256 amount) external whenNotPaused {
+        require(amount >= 0, "Amount must be greater than zero");
+        IERC20 usdc = IERC20(USDC_BASE);
+        uint256 balance = usdc.balanceOf(msg.sender);
+        require(balance >= amount, "Insufficient balance");
 
-        orders[orderId] = Order({
-            sender: msg.sender,
-            senderFee: _senderFee,
-            rate: _rate,            
-            isRefunded: false,
-            refundAddress: _refundAddress,
-            amount: _amount
-        });
+        uint256 allowance = usdc.allowance(msg.sender, address(this));
+        require(
+            allowance >= amount,
+            "Allowance is less than the donation amount"
+        );
 
-        emit Event.OrderCreate(
-            orders[orderId].sender,
-            _senderFee,
-            _rate,
-            orders[orderId].amount,
-            messageHash           
-        );       
+        bool success = usdc.transferFrom(msg.sender, address(this), amount);
+        require(success, "Transfer failed");
 
-    }    
-
-    function refundOrder(bytes32 orderId) external onlyOwner {
-        Order storage order = orders[orderId];
-        require(!order.isRefunded, "Order already refunded");
-
-        order.isRefunded = true;
-
-        IERC20(usdc).transfer(order.refundAddress, order.amount + order.senderFee);
-
-        emit Event.OrderRefunded(orderId, order.sender, order.amount, order.refundAddress);
+        users[msg.sender] += amount;
     }
 
-    function withdraw(address _to, uint256 _amount) external onlyOwner {
-        require(_to != address(0), "Invalid address");
+    function internalTransfer(
+        address _to,
+        uint256 _amount
+    ) external whenNotPaused {
+        require(_to != address(0), "Invalid recipient address");
         require(_amount > 0, "Amount must be greater than zero");
 
-        IERC20(usdc).transfer(_to, _amount);
+        uint256 senderBalance = users[msg.sender];
+        require(senderBalance >= _amount, "Insufficient balance");
 
-        emit Event.Withdraw(_to, _amount);
+        users[msg.sender] -= _amount;
+        users[_to] += _amount;
+
+        emit Event.InternalTransfer(msg.sender, _to, _amount);
     }
-
-    function getOrderInfo(bytes32 _orderId) external view returns (Order memory) {
-		return orders[_orderId];
-	}
-
-    function getContractBalance() external view returns (uint256) {
-        return IERC20(usdc).balanceOf(address(this));
-    }
-
 }
