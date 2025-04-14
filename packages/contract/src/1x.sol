@@ -9,12 +9,14 @@ import "./lib/Error.sol";
 import "./lib/Event.sol";
 
 contract Contract is Ownable, Pausable {
-    address public immutable USDC_BASE =
-        0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    address public immutable usdc;
 
     mapping(address userAddress => uint256 amount) users;
 
-    constructor() Ownable(msg.sender) {}
+    constructor(address _usdc) Ownable(msg.sender) {
+        require(_usdc != address(0), "Invalid USDC address");
+        usdc = _usdc;
+    }
 
     function pauseToggle() external onlyOwner {
         if (paused()) {
@@ -50,19 +52,6 @@ contract Contract is Ownable, Pausable {
         emit Event.PaymentFiat(msg.sender, _to, amount);
     }
 
-    // function payEth(address _to, uint _amount) external whenNotPaused {
-    //     require(_to != address(0), "Invalid recipient address");
-    //     require(_amount > 0, "Amount must be greater than zero");
-    //     require(address(this).balance >= _amount, "Insufficient contract balance");
-
-    //     (uint256 fee, uint256 amountAfterFee) = calculateFee(_amount);
-
-    //     (bool sent, ) = _to.call{value: amountAfterFee}("");
-    //     require(sent, "ETH transfer failed");
-
-    //     emit Event.Payment(msg.sender, _to, amountAfterFee);
-    // }
-
     function withdraw(uint256 amount) external whenNotPaused {
         require(amount > 0, "Amount must be greater than zero");
         uint256 balance = users[msg.sender];
@@ -71,8 +60,8 @@ contract Contract is Ownable, Pausable {
         uint256 fee = (amount * 5) / 1000; // Calculate 0.5% fee
         uint256 amountAfterFee = amount - fee;
 
-        IERC20 usdc = IERC20(USDC_BASE);
-        bool success = usdc.transfer(msg.sender, amountAfterFee);
+        IERC20 usdcToken = IERC20(usdc);
+        bool success = usdcToken.transfer(msg.sender, amountAfterFee);
         require(success, "Transfer failed");
 
         users[msg.sender] -= amount;
@@ -88,8 +77,8 @@ contract Contract is Ownable, Pausable {
         uint256 fee = (amount * 5) / 1000; // Calculate 0.5% fee
         uint256 amountAfterFee = amount - fee;
 
-        IERC20 usdc = IERC20(USDC_BASE);
-        bool success = usdc.transfer(msg.sender, amountAfterFee);
+        IERC20 usdcToken = IERC20(usdc);
+        bool success = usdcToken.transfer(msg.sender, amountAfterFee);
         require(success, "Transfer failed");
 
         users[msg.sender] -= amount;
@@ -98,20 +87,28 @@ contract Contract is Ownable, Pausable {
     }
     function deposite(uint256 amount) external whenNotPaused {
         require(amount >= 0, "Amount must be greater than zero");
-        IERC20 usdc = IERC20(USDC_BASE);
-        uint256 balance = usdc.balanceOf(msg.sender);
+        IERC20 usdcToken = IERC20(usdc);
+        uint256 balance = usdcToken.balanceOf(msg.sender);
         require(balance >= amount, "Insufficient balance");
 
-        uint256 allowance = usdc.allowance(msg.sender, address(this));
+        uint256 allowance = usdcToken.allowance(msg.sender, address(this));
         require(
             allowance >= amount,
             "Allowance is less than the donation amount"
         );
 
-        bool success = usdc.transferFrom(msg.sender, address(this), amount);
+        bool success = usdcToken.transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
         require(success, "Transfer failed");
 
         users[msg.sender] += amount;
+    }
+
+    function getBalance(address user) external view returns (uint256) {
+        return users[user];
     }
 
     function internalTransfer(
