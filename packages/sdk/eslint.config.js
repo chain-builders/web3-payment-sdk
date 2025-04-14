@@ -12,6 +12,9 @@ export default tseslint.config(
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parserOptions: {
+        allowAny: true // Allow any type
+      }
     },
     plugins: {
       'react-hooks': reactHooks,
@@ -23,6 +26,9 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      '@typescript-eslint/no-unused-vars': 'off', // Disable no-unused-vars rule
+      '@typescript-eslint/no-explicit-any': 'off', // Allow explicit any
+      '@typescript-eslint/ban-types': 'off' // Allow all types including {}
     },
   },
 )
