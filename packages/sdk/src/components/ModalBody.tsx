@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Currency, PaymentOptions } from "../types";
 import ConnectButton from "./ConnectButton";
 import { sampleCurrencies } from "../utils";
 import CurrencyDropdown from "./CurrencyDropdown";
 import { useAccount } from "wagmi";
-import { useGetBalance } from "../hooks/use-usdt";
+import { useApproveUsdt, useGetBalance } from "../hooks/use-usdt";
+import { usePay } from "../hooks/use-payments";
 
 const ModalBody = ({ options }: { options: PaymentOptions }) => {
   const { address } = useAccount();
@@ -12,7 +13,39 @@ const ModalBody = ({ options }: { options: PaymentOptions }) => {
     sampleCurrencies[0]
   );
 
-  const { balance, formattedBalance, isLoading } = useGetBalance();
+  const { formattedBalance, isLoading, decimals } = useGetBalance();
+  const {
+    approve,
+    isPending: approveingErc20,
+
+    isSuccess,
+  } = useApproveUsdt();
+  const { pay, isPending, error } = usePay();
+
+  useEffect(() => {
+    if (isSuccess) {
+      const amount =
+        BigInt(options?.amount || 0) * BigInt(10 ** (decimals as number));
+      pay(amount);
+    }
+    console.log("isSuccess", isSuccess);
+  }, [isSuccess]);
+  useEffect(() => {
+    if (error) {
+      console.log("error", error);
+    }
+  }, [error]);
+
+  const handlePay = async () => {
+    console.log("hiyaa", decimals);
+    try {
+      const amount =
+        BigInt(options?.amount || 0) * BigInt(10 ** (decimals as number));
+      approve(amount);
+    } catch (error) {
+      console.error("Payment failed:", error);
+    }
+  };
 
   return (
     <div className="relative bg-white rounded-2xl overflow-hidden w-[500px] min-h-[450px] max-[500px] mx-4 ">
@@ -52,12 +85,16 @@ const ModalBody = ({ options }: { options: PaymentOptions }) => {
       </div> */}
 
             <div className="w-full mt-6 flex justify-center px-10">
-              <button className="py-3 w-full bg-[#6750A4] text-white rounded-lg text-sm">
-                Proceed to pay
+              <button
+                className="py-3 w-full bg-[#6750A4] text-white rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handlePay}
+                disabled={isPending || approveingErc20}
+              >
+                {isPending || approveingErc20
+                  ? "Processing..."
+                  : "Proceed to pay"}
               </button>
             </div>
-
-            
           </div>
           {!address ? (
             <div className="absolute w-full h-full bg-black/20 flex items-center justify-center  backdrop-blur-md top-0 left-0 ">

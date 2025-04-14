@@ -29,12 +29,14 @@ export const useGetBalance = () => {
     isError,
     isLoading,
     refetch,
+    decimals,
   };
 };
 
 export const useApproveUsdt = () => {
   const { address } = useAccount();
-  const { writeContract, isPending, error, data } = useWriteContract();
+  const { writeContract, isPending, error, data, isSuccess } =
+    useWriteContract();
 
   const approve = async (amount: bigint) => {
     if (!address) {
@@ -42,17 +44,12 @@ export const useApproveUsdt = () => {
       return;
     }
 
-    try {
-      const result = await writeContract({
-        ...wagmiContractConfigUsdt,
-        functionName: "approve",
-        args: [CONTRACT_ADDRESS, amount],
-      });
-      return result;
-    } catch (err) {
-      console.error("Error calling approve:", err);
-      throw err;
-    }
+    const result = writeContract({
+      ...wagmiContractConfigUsdt,
+      functionName: "approve",
+      args: [CONTRACT_ADDRESS, amount],
+    });
+    return result;
   };
 
   return {
@@ -60,5 +57,6 @@ export const useApproveUsdt = () => {
     isPending,
     error,
     data,
+    isSuccess,
   };
 };

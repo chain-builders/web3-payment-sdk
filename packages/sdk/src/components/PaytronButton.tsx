@@ -5,7 +5,7 @@ const PaytronButton = () => {
 
   const handleCheckout = () => {
     initiatePayment({
-      amount: "0.05",
+      amount: "20",
       currency: "ETH",
       // Optional parameters
       tokenAddress: "0x...",
