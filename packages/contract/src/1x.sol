@@ -4,165 +4,199 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract Contract is Ownable, Pausable {
+contract Contract is Ownable, Pausable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
+    enum Token {
+        USDC,
+        USDT,
+        ETH
+    }
+
     address public immutable usdc;
+    address public immutable usdt;
 
-    mapping(address => uint256) private users;
+    mapping(address => mapping(Token => uint256)) private users;
+    mapping(Token => uint256) public totalFeesCollected;
 
-    event Deposit(address indexed user, uint256 amount);
+    event Deposit(address indexed user, Token indexed token, uint256 amount);
     event Payment(
         address indexed from,
         address indexed to,
+        Token indexed token,
         uint256 amount,
         bool isFiat
     );
     event Withdraw(
         address indexed user,
-        uint256 netAmount,
+        Token indexed token,
+        uint256 indexed netAmount,
         uint256 fee,
         bool isFiat
     );
     event InternalTransfer(
         address indexed from,
         address indexed to,
+        Token indexed token,
         uint256 amount
     );
     event OwnerTokenWithdraw(
         address indexed token,
         address indexed to,
-        uint256 amount
+        uint256 indexed amount
     );
+    event Received(address indexed sender, uint256 indexed amount);
 
-    constructor(address _usdc) Ownable(msg.sender) {
-        require(_usdc != address(0), "Invalid USDC address");
+    constructor(address _usdc, address _usdt) Ownable(msg.sender) {
+        require(
+            _usdc != address(0) && _usdt != address(0),
+            "Invalid token address"
+        );
         usdc = _usdc;
+        usdt = _usdt;
     }
 
-    /**
-     * @notice Toggle pause/unpause (onlyOwner)
-     */
     function togglePause() external onlyOwner {
         paused() ? _unpause() : _pause();
     }
 
-    /**
-     * @notice Deposit USDC into internal balance
-     * @param amount Amount of USDC (must be approved first)
-     */
-    function deposit(uint256 amount) external whenNotPaused {
-        require(amount > 0, "Amount must be greater than zero");
-
-        IERC20 usdcToken = IERC20(usdc);
+    function deposit(
+        Token token,
+        uint256 amount
+    ) external payable nonReentrant whenNotPaused {
         require(
-            usdcToken.allowance(msg.sender, address(this)) >= amount,
-            "Insufficient allowance"
+            amount > 0 || (token == Token.ETH && msg.value > 0),
+            "Invalid amount"
         );
 
-        bool success = usdcToken.transferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
-        require(success, "Transfer failed");
+        if (token == Token.ETH) {
+            require(msg.value == amount, "ETH amount mismatch");
+        } else {
+            address tokenAddr = _getTokenAddress(token);
+            IERC20(tokenAddr).safeTransferFrom(
+                msg.sender,
+                address(this),
+                amount
+            );
+        }
 
-        users[msg.sender] += amount;
-
-        emit Deposit(msg.sender, amount);
+        users[msg.sender][token] += amount;
+        emit Deposit(msg.sender, token, amount);
     }
 
-    /**
-     * @notice Pay another user using internal balance
-     * @param to Recipient address
-     * @param amount Amount to transfer
-     * @param isFiat Whether this is a fiat-type payment (for analytics/logs)
-     */
     function pay(
         address to,
+        Token token,
         uint256 amount,
         bool isFiat
-    ) external whenNotPaused {
-        _transferInternal(msg.sender, to, amount);
-        emit Payment(msg.sender, to, amount, isFiat);
+    ) external nonReentrant whenNotPaused {
+        _transferInternal(msg.sender, to, token, amount);
+        emit Payment(msg.sender, to, token, amount, isFiat);
     }
 
-    /**
-     * @notice Withdraw from internal balance to wallet (0.5% fee)
-     * @param amount Amount to withdraw
-     * @param isFiat Whether this is a fiat-type withdrawal (for logs)
-     */
-    function withdraw(uint256 amount, bool isFiat) external whenNotPaused {
-        _withdrawInternal(amount, isFiat);
+    function withdraw(
+        Token token,
+        uint256 amount,
+        bool isFiat
+    ) external nonReentrant whenNotPaused {
+        _withdrawInternal(token, amount, isFiat);
     }
 
-    /**
-     * @notice Transfer internal balance from sender to recipient (system logic)
-     * @param to Address to credit
-     * @param amount Amount to transfer
-     */
     function internalTransfer(
         address to,
+        Token token,
         uint256 amount
-    ) external whenNotPaused {
-        _transferInternal(msg.sender, to, amount);
-        emit InternalTransfer(msg.sender, to, amount);
+    ) external nonReentrant whenNotPaused {
+        _transferInternal(msg.sender, to, token, amount);
+        emit InternalTransfer(msg.sender, to, token, amount);
     }
 
-    /**
-     * @notice View internal balance of a user
-     * @param user Address to query
-     */
-    function getBalance(address user) external view returns (uint256) {
-        return users[user];
+    function getBalance(
+        address user,
+        Token token
+    ) external view returns (uint256) {
+        return users[user][token];
     }
 
-    /**
-     * @notice Owner can withdraw any ERC20 tokens from contract (e.g. fees, stuck tokens)
-     * @param token ERC20 token address
-     * @param amount Amount to withdraw
-     * @param to Destination address
-     */
     function ownerWithdrawTokens(
         address token,
         uint256 amount,
         address to
-    ) external onlyOwner {
-        require(to != address(0), "Invalid recipient address");
-        require(amount > 0, "Amount must be greater than zero");
+    ) external onlyOwner nonReentrant {
+        require(to != address(0), "Invalid recipient");
+        require(amount > 0, "Invalid amount");
 
-        IERC20(token).transfer(to, amount);
+        if (token == address(0)) {
+            (bool sent, ) = payable(to).call{value: amount}("");
+            require(sent, "ETH transfer failed");
+        } else {
+            IERC20(token).safeTransfer(to, amount);
+        }
+
         emit OwnerTokenWithdraw(token, to, amount);
     }
 
-    // ========================================
+    // =============================
     // Internal Helpers
-    // ========================================
+    // =============================
+
+    function _getTokenAddress(Token token) internal view returns (address) {
+        if (token == Token.USDC) return usdc;
+        if (token == Token.USDT) return usdt;
+        revert("Unsupported token");
+    }
 
     function _transferInternal(
         address from,
         address to,
+        Token token,
         uint256 amount
     ) internal {
         require(to != address(0), "Invalid recipient");
         require(amount > 0, "Amount must be greater than zero");
-        require(users[from] >= amount, "Insufficient balance");
+        require(users[from][token] >= amount, "Insufficient balance");
 
-        users[from] -= amount;
-        users[to] += amount;
+        users[from][token] -= amount;
+        users[to][token] += amount;
     }
 
-    function _withdrawInternal(uint256 amount, bool isFiat) internal {
+    function _withdrawInternal(
+        Token token,
+        uint256 amount,
+        bool isFiat
+    ) internal {
         require(amount > 0, "Amount must be greater than zero");
-        require(users[msg.sender] >= amount, "Insufficient balance");
+        require(users[msg.sender][token] >= amount, "Insufficient balance");
 
         uint256 fee = (amount * 5) / 1000;
         uint256 netAmount = amount - fee;
 
-        IERC20 usdcToken = IERC20(usdc);
-        require(usdcToken.transfer(msg.sender, netAmount), "Transfer failed");
+        users[msg.sender][token] -= amount;
+        totalFeesCollected[token] += fee;
 
-        users[msg.sender] -= amount;
+        if (token == Token.ETH) {
+            (bool sent, ) = payable(msg.sender).call{value: netAmount}("");
+            require(sent, "ETH transfer failed");
+        } else {
+            address tokenAddr = _getTokenAddress(token);
+            IERC20(tokenAddr).safeTransfer(msg.sender, netAmount);
+        }
 
-        emit Withdraw(msg.sender, netAmount, fee, isFiat);
+        emit Withdraw(msg.sender, token, netAmount, fee, isFiat);
+    }
+
+    // =============================
+    // Fallbacks
+    // =============================
+
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
+    }
+
+    fallback() external payable {
+        emit Received(msg.sender, msg.value);
     }
 }
