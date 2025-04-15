@@ -60,3 +60,29 @@ export const useApproveUsdt = () => {
     isSuccess,
   };
 };
+export const useTransferUsdt = () => {
+  const { address } = useAccount();
+  const { writeContract, isPending, error, data, isSuccess } =
+    useWriteContract();
+  const transferFrom = async (amount: bigint) => {
+    if (!address) {
+      console.error("No address found");
+      return;
+    }
+
+    const result = writeContract({
+      ...wagmiContractConfigUsdt,
+      functionName: "transferFrom",
+      args: [address, CONTRACT_ADDRESS, amount],
+    });
+    return result;
+  };
+
+  return {
+    transferFrom,
+    transferfromPending: isPending,
+    transferError: error,
+    data,
+    transfersuccess: isSuccess,
+  };
+};

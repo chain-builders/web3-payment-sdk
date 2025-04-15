@@ -3,7 +3,7 @@ import contractAbi from "./abi.json";
 
 const sdkAbi = contractAbi.abi;
 
-export const CONTRACT_ADDRESS = "0x2CFF6456FAeA575AeFCD15BCc8B0883Bf63e814d";
+export const CONTRACT_ADDRESS = "0x05388a2f2a0B6a1ea94681154C9e8734322ED77D";
 export const USDC_CONTRACT_ADDRESS =
   "0x5dEaC602762362FE5f135FA5904351916053cF70";
 export const USDT_CONTRACT_ADDRESS =

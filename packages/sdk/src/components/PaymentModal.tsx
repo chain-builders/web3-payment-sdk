@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { PaymentConfig, PaymentOptions } from "../types";
 import ModalBody from "./ModalBody";
 import { motion, AnimatePresence } from "framer-motion";
+import Transfer from "./Transfer";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -22,25 +23,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  if (!isOpen || !options) return null;
-
-  const handlePayment = async () => {
-    try {
-      setIsProcessing(true);
-      setTimeout(() => {
-        const mockTransactionId = `tx_${Math.random()
-          .toString(36)
-          .substring(2, 15)}`;
-        onSuccess(mockTransactionId);
-        setIsProcessing(false);
-      }, 2000);
-    } catch (error) {
-      onError(
-        error instanceof Error ? error : new Error("Unknown error occurred")
-      );
-      setIsProcessing(false);
-    }
+  const [activeTab, setActiveTab] = useState(0);
+  const handleTabClick = (index: number) => {
+    setActiveTab(index);
   };
+
+  if (!isOpen || !options) return null;
 
   return (
     <AnimatePresence mode="wait">
@@ -85,8 +73,30 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 />
               </svg>
             </motion.span>
+            <div className="relative bg-white rounded-2xl overflow-hidden w-[510px] min-h-[450px] max-[500px] mx-4 ">
+              <div className="sticky z-20 w-full flex items-center p-6">
+                <div className="w-full flex gap-8  justify-center items-center tex-xs text-gray-900 text-sm cursor-pointer">
+                  {["from wallet", "wallet transfer", " offramp payment"].map(
+                    (item, index) => (
+                      <p
+                        key={index}
+                        className={`" px-2 py-3 flex items-center gap-1 justify-center font-inter font-semibold  ${
+                          index === activeTab
+                            ? "border-b-2  border-b-[#6750A4] text-[#6750A4]"
+                            : "text-gray-500"
+                        } "`}
+                        onClick={() => handleTabClick(index)}
+                      >
+                        {item}
+                      </p>
+                    )
+                  )}
+                </div>
+              </div>
 
-            <ModalBody options={options} />
+              {activeTab === 0 && <ModalBody options={options} />}
+              {activeTab === 1 && <Transfer options={options} />}
+            </div>
             <motion.p
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

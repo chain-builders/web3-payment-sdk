@@ -9,6 +9,7 @@ interface CurrencyDropdownProps {
   onSelect: (currency: Currency) => void;
   amount: string;
   balance: number;
+  show?: boolean;
 }
 
 const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
@@ -17,6 +18,7 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
   onSelect,
   amount,
   balance,
+  show = true
 }) => {
   const { address } = useAccount();
   const [isOpen, setIsOpen] = useState(false);
@@ -112,6 +114,8 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
         </AnimatePresence>
       </div>
 
+{show && (
+  <>
       <motion.h2
         className={`text-2xl font-semibold ${
           isInsufficientBalance ? "text-red-600" : "text-gray-900"
@@ -123,7 +127,15 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
       >
         {amount} {selectedCurrency.symbol}
       </motion.h2>
-      <p className={`text-sm ${  isInsufficientBalance ? "text-red-600" : "text-green-700"} `}>Your balance: {balance} </p>
+      <p
+        className={`text-sm ${
+          isInsufficientBalance ? "text-red-600" : "text-green-700"
+        } `}
+      >
+        Your balance: {balance}{" "}
+      </p>
+  </>
+)}
     </div>
   );
 };
