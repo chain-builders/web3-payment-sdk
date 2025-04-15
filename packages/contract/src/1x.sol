@@ -163,8 +163,11 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
             users[from][token] -= amount;
             users[to][token] += amount;
         } else {
-            address tokenAddr = _getTokenAddress(token);
-            IERC20(tokenAddr).safeTransferFrom(from, to, amount);
+            // address tokenAddr = _getTokenAddress(token);
+            require(users[from][token] >= amount, "Insufficient balance");
+            users[from][token] -= amount;
+            users[to][token] += amount;
+            // IERC20(tokenAddr).safeTransferFrom(from, to, amount);
         }
     }
 
