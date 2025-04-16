@@ -78,7 +78,7 @@ contract ContractTest is Test {
     // Constructor Tests
     // =============================
     
-    function testConstructor() public {
+    function testConstructor() public view {
         assertEq(paymentContract.usdc(), address(usdc));
         assertEq(paymentContract.usdt(), address(usdt));
     }
@@ -95,7 +95,7 @@ contract ContractTest is Test {
     // Ownership and Pause Tests
     // =============================
     
-    function testOwnership() public {
+    function testOwnership() public view {
         assertEq(paymentContract.owner(), owner);
     }
     
@@ -412,11 +412,6 @@ contract ContractTest is Test {
         assertTrue(success);
         // Should execute fallback but not increase user balance
         assertEq(paymentContract.getBalance(user1, Contract.Token.ETH), 0);
-    }
+    }    
     
-    function testReentrancyProtection() public {
-        // This is mostly tested by having the nonReentrant modifier
-        // A complete test would require a malicious contract attempting reentrancy
-        assertTrue(true);
-    }
 }
