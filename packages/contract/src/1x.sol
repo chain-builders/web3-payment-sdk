@@ -157,13 +157,6 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
     ) internal {
         require(to != address(0), "Invalid recipient");
         require(amount > 0, "Amount must be greater than zero");
-<<<<<<< HEAD
-        address tokenAddr = _getTokenAddress(token);
-        require(users[from][token] >= amount, "Insufficient balance");
-        users[from][token] -= amount;
-        users[to][token] += amount;
-        IERC20(tokenAddr).transferFrom(from, to, amount);
-=======
         
         if (token == Token.ETH) {
             require(users[from][token] >= amount, "Insufficient balance");
@@ -176,7 +169,6 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
             users[to][token] += amount;
             // IERC20(tokenAddr).safeTransferFrom(from, to, amount);
         }
->>>>>>> e333570f5c1d159db7a8fdaebcf13fc090efe930
     }
 
     function _withdrawInternal(
