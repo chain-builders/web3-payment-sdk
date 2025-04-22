@@ -14,12 +14,15 @@ export interface PaymentOptions {
   currency: string;
   tokenAddress?: string;
   metadata?: Record<string, any>;
-  recipient?: string; // Optional override for the recipient address
+  recipient?: string;
+  transactionHash?: string;
+  onSuccess?: () => void;
+  onError?: (error: any) => void;
 }
 
 export interface PaymentResult {
   transactionId: string;
-  status: 'success' | 'failed' | 'pending';
+  status: "success" | "failed" | "pending";
   timestamp: number;
 }
 
@@ -28,9 +31,15 @@ export interface Currency {
   name: string;
   symbol: string;
   icon: string;
-  contractAddress:  string,
+  contractAddress: string;
   network?: {
     name: string;
     icon?: string;
   };
+}
+
+export interface Data {
+  txId: string;
+  amount: string;
+  currency: string;
 }

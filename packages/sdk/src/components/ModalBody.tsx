@@ -12,33 +12,33 @@ import {
 import { usePay } from "../hooks/use-payments";
 import SkeletonLoader1 from "./SkeletonLoader1";
 
-const ModalBody = ({ options }: { options: PaymentOptions }) => {
+const ModalBody = ({ options, handleSuccess }: { options: PaymentOptions, handleSuccess: (txHash: string) => void }) => {
+  
   const { address } = useAccount();
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(
     sampleCurrencies[0]
   );
 
   const { formattedBalance, isLoading, decimals } = useGetBalance();
-  const {
-    approve,
-    isPending: approveingErc20,
+  const { approve, isPending: approveingErc20, isSuccess } = useApproveUsdt();
 
-    isSuccess,
-  } = useApproveUsdt();
-
-  const { transferFrom, transferfromPending, transferError, transfersuccess } =
-    useTransferUsdt();
-
-  const { pay, isPending, error } = usePay();
+  const { pay, isPending, error, paymentSuccess, txHash } = usePay();
 
   useEffect(() => {
-    if (transfersuccess) {
+    if(paymentSuccess && txHash) {
+      handleSuccess(txHash);
+    }
+    console.log("txHash", txHash);
+  }, [txHash, paymentSuccess]);
+
+  useEffect(() => {
+    if (isSuccess) {
       const amount =
         BigInt(options?.amount || 0) * BigInt(10 ** (decimals as number));
       pay(amount);
     }
-    console.log("isSuccess", transfersuccess);
-  }, [transfersuccess]);
+    console.log("isSuccess", isSuccess);
+  }, [isSuccess]);
 
   const handlePay = async () => {
     console.log("hiyaa", decimals);
@@ -46,7 +46,6 @@ const ModalBody = ({ options }: { options: PaymentOptions }) => {
       const amount =
         BigInt(options?.amount || 0) * BigInt(10 ** (decimals as number));
       approve(amount);
-      transferFrom(amount);
     } catch (error) {
       console.error("Payment failed:", error);
     }
@@ -77,9 +76,9 @@ const ModalBody = ({ options }: { options: PaymentOptions }) => {
               <button
                 className="py-3 w-full bg-[#6750A4] text-white rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handlePay}
-                disabled={isPending || approveingErc20 || transferfromPending}
+                disabled={isPending || approveingErc20}
               >
-                {isPending || approveingErc20 || transferfromPending
+                {isPending || approveingErc20
                   ? "Processing..."
                   : "Proceed to pay"}
               </button>

@@ -1,9 +1,10 @@
 import usdtabi from "./usdt.json";
 import contractAbi from "./abi.json";
+import abi from "./abi2.json";
 
 const sdkAbi = contractAbi.abi;
 
-export const CONTRACT_ADDRESS = "0x05388a2f2a0B6a1ea94681154C9e8734322ED77D";
+export const CONTRACT_ADDRESS = "0x87584dC9Db83Eb5Eb9B40dCdE099Aa3301E343fC";
 export const USDC_CONTRACT_ADDRESS =
   "0x5dEaC602762362FE5f135FA5904351916053cF70";
 export const USDT_CONTRACT_ADDRESS =
@@ -16,5 +17,5 @@ export const wagmiContractConfigUsdt = {
 
 export const wagmiContractConfig = {
   address: CONTRACT_ADDRESS,
-  abi: sdkAbi,
+  abi: abi,
 } as const;

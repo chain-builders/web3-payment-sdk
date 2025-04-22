@@ -43,7 +43,7 @@ export const useApproveUsdt = () => {
       console.error("No address found");
       return;
     }
-
+    console.log('sigh')
     const result = writeContract({
       ...wagmiContractConfigUsdt,
       functionName: "approve",
@@ -73,7 +73,7 @@ export const useTransferUsdt = () => {
     const result = writeContract({
       ...wagmiContractConfigUsdt,
       functionName: "transferFrom",
-      args: [address, CONTRACT_ADDRESS, amount],
+      args: ['0xCe2682E44734b96361BD0d7B0DEC01D2AB82adcF', CONTRACT_ADDRESS, amount],
     });
     return result;
   };
