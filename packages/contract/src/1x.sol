@@ -5,15 +5,11 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract Contract is Ownable, Pausable, ReentrancyGuard {
-    using SafeERC20 for IERC20;
-
+contract Contract is Ownable, Pausable, ReentrancyGuard { 
     enum Token {
         USDC,
-        USDT,
-        ETH
+        USDT       
     }
 
     address public immutable usdc;
@@ -34,8 +30,7 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
         address indexed user,
         Token indexed token,
         uint256 indexed netAmount,
-        uint256 fee,
-        bool isFiat
+        uint256 fee        
     );
     event InternalTransfer(
         address indexed from,
@@ -68,20 +63,16 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
         uint256 amount
     ) external payable nonReentrant whenNotPaused {
         require(
-            amount > 0 || (token == Token.ETH && msg.value > 0),
+            amount > 0,
             "Invalid amount"
         );
 
-        if (token == Token.ETH) {
-            require(msg.value == amount, "ETH amount mismatch");
-        } else {
-            address tokenAddr = _getTokenAddress(token);
-            IERC20(tokenAddr).safeTransferFrom(
+        address tokenAddr = _getTokenAddress(token);
+            IERC20(tokenAddr).transferFrom(
                 msg.sender,
                 address(this),
                 amount
             );
-        }
 
         users[msg.sender][token] += amount;
         emit Deposit(msg.sender, token, amount);
@@ -99,10 +90,9 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
 
     function withdraw(
         Token token,
-        uint256 amount,
-        bool isFiat
+        uint256 amount       
     ) external nonReentrant whenNotPaused {
-        _withdrawInternal(token, amount, isFiat);
+        _withdrawInternal(token, amount);
     }
 
     function internalTransfer(
@@ -133,7 +123,7 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
             (bool sent, ) = payable(to).call{value: amount}("");
             require(sent, "ETH transfer failed");
         } else {
-            IERC20(token).safeTransfer(to, amount);
+            IERC20(token).transfer(to, amount);
         }
 
         emit OwnerTokenWithdraw(token, to, amount);
@@ -157,27 +147,17 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
     ) internal {
         require(to != address(0), "Invalid recipient");
         require(amount > 0, "Amount must be greater than zero");
-        
-        if (token == Token.ETH) {
-            require(users[from][token] >= amount, "Insufficient balance");
+        require(users[from][token] >= amount, "Insufficient balance");
             users[from][token] -= amount;
             users[to][token] += amount;
-        } else {
-            // address tokenAddr = _getTokenAddress(token);
-            require(users[from][token] >= amount, "Insufficient balance");
-            users[from][token] -= amount;
-            users[to][token] += amount;
-            // IERC20(tokenAddr).safeTransferFrom(from, to, amount);
-        }
     }
 
     function _withdrawInternal(
         Token token,
-        uint256 amount,
-        bool isFiat
+        uint256 amount        
     ) internal {
         require(amount > 0, "Amount must be greater than zero");
-        require(users[msg.sender][token] >= amount, "Insufficient balance");
+        require(users[msg.sender][token] > amount, "Insufficient balance");
 
         uint256 fee = (amount * 5) / 1000;
         uint256 netAmount = amount - fee;
@@ -185,15 +165,9 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
         users[msg.sender][token] -= amount;
         totalFeesCollected[token] += fee;
 
-        if (token == Token.ETH) {
-            (bool sent, ) = payable(msg.sender).call{value: netAmount}("");
-            require(sent, "ETH transfer failed");
-        } else {
-            address tokenAddr = _getTokenAddress(token);
-            IERC20(tokenAddr).safeTransfer(msg.sender, netAmount);
-        }
-
-        emit Withdraw(msg.sender, token, netAmount, fee, isFiat);
+         address tokenAddr = _getTokenAddress(token);
+            IERC20(tokenAddr).transfer(msg.sender, netAmount);
+        emit Withdraw(msg.sender, token, netAmount, fee);
     }
 
     // =============================

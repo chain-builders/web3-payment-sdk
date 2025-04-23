@@ -12,13 +12,12 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
 
     enum Token {
         USDC,
-        USDT,
-        CUSTOM_TOKEN
+        USDT        
     }
 
     address public immutable usdc;
     address public immutable usdt;
-    address public immutable custom_token;
+    // address public immutable custom_token;
 
     mapping(address => mapping(Token => uint256)) private users;
 
@@ -46,35 +45,32 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
         uint256 indexed amount
     );
 
-    constructor(address _usdc, address _usdt, address _custom_token) Ownable(msg.sender) {
+    constructor(address _usdc, address _usdt) Ownable(msg.sender) {
         require(
-            _usdc != address(0) && _usdt != address(0) && _custom_token != address(0),
+            _usdc != address(0) && _usdt != address(0),
             "Invalid token address"
         );
         usdc = _usdc;
         usdt = _usdt;
-        custom_token = _custom_token;
     }
 
     function togglePause() external onlyOwner {
         paused() ? _unpause() : _pause();
     }
 
-    function transferFrom(Token _token, address _from, uint256 _amount) external payable whenNotPaused nonReentrant {
+    function transferFrom(Token _token, address, uint256 _amount) external payable whenNotPaused nonReentrant {
         require(
             _amount > 0, "Invalid amount"
         );
         address tokenAddr = _getTokenAddress(_token);
-        IERC20(tokenAddr).safeTransferFrom(_from, address(this), _amount);
-        users[msg.sender][_token] += _amount;   
-
-        emit TokensTransferred(_from, address(this), _token, _amount);
+        IERC20(tokenAddr).safeTransferFrom(msg.sender, address(this), _amount);
+        users[msg.sender][_token] += _amount; 
+        emit TokensTransferred(msg.sender, address(this), _token, _amount);
     }
 
     function withdraw(Token _token) external nonReentrant {
         uint256 amount = users[msg.sender][_token];
         require(amount > 0, "No tokens to withdraw");
-
         users[msg.sender][_token] = 0;
         address tokenAddr = _getTokenAddress(_token);
         IERC20(tokenAddr).safeTransfer(msg.sender, amount);
