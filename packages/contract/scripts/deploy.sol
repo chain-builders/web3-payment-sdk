@@ -13,11 +13,11 @@ contract DeployScript is Script {
 
         address usdc = 0x5dEaC602762362FE5f135FA5904351916053cF70;
         address usdt = 0x323e78f944A9a1FcF3a10efcC5319DBb0bB6e673;
-        address custom_token = 0x6B65cEA034d4f509CBDb7DcFE8B692a8bdD9BfA7;
+        // address custom_token = 0x6B65cEA034d4f509CBDb7DcFE8B692a8bdD9BfA7;
 
         vm.startBroadcast();
 
-        Contract contractInstance = new Contract(usdc, usdt, custom_token);
+        Contract contractInstance = new Contract(usdc, usdt);
 
         vm.stopBroadcast();
 

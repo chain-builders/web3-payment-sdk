@@ -8,7 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:sdk": "turbo run dev --filter=@paymentsdk/sdk"
+    "dev:sdk": "turbo run dev --filter=@paymentsdk/sdk",
+    "dev:frontend": "turbo run dev --filter=@paymentsdk/frontend"
   },
   "keywords": [],
   "author": "",

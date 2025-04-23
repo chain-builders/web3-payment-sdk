@@ -94,7 +94,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
               </div>
 
-              {activeTab === 0 && <ModalBody options={options} />}
+              {activeTab === 0 && (
+                <ModalBody handleSuccess={onSuccess} options={options} />
+              )}
               {activeTab === 1 && <Transfer options={options} />}
             </div>
             <motion.p

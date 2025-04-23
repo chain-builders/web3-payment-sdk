@@ -1,12 +1,14 @@
 import { useAccount, useWriteContract } from "wagmi";
 import { USDT_CONTRACT_ADDRESS, wagmiContractConfig } from "../utils/contract";
 import { usePayment } from "../context/PaymentContext";
+import { isAddress } from "viem";
 
 export const usePay = () => {
   const { config } = usePayment();
 
   const { address } = useAccount();
-  const { writeContract, isPending, error, data } = useWriteContract();
+  // data here represents the transaction hash returned from the contract write operation
+  const { writeContract, isPending, error, data: txHash, isSuccess } = useWriteContract();
 
   const pay = async (amount: bigint) => {
     console.log(config, amount);
@@ -17,8 +19,8 @@ export const usePay = () => {
 
     const result = writeContract({
       ...wagmiContractConfig,
-      functionName: "pay",
-      args: [config.walletAddress, 1, amount, false],
+      functionName: "transferFrom",
+      args: [1, address, amount],
     });
 
     return result;
@@ -27,6 +29,7 @@ export const usePay = () => {
     pay,
     isPending,
     error,
-    data,
+    txHash,
+    paymentSuccess: isSuccess
   };
 };

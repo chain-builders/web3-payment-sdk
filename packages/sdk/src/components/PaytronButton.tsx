@@ -1,27 +1,39 @@
 import { usePayment } from "../context/PaymentContext";
 
-const PaytronButton = () => {
+interface PaymentMetadata {
+  [key: string]: string;
+}
+
+interface PaytronButtonProps {
+  amount: string;
+  currency?: "USDT" | "USDC";
+  metadata?: PaymentMetadata;
+  onSuccess?: () => void;
+}
+
+const PaytronButton = ({
+  amount,
+  currency = "USDT",
+  metadata,
+  onSuccess,
+}: PaytronButtonProps) => {
   const { initiatePayment } = usePayment();
 
   const handleCheckout = () => {
     initiatePayment({
-      amount: "20",
-      currency: "ETH",
-      // Optional parameters
-      tokenAddress: "0x...",
-      metadata: {
-        productId: "12345",
-        orderId: "order_789",
-      },
+      amount,
+      currency,
+      metadata,
+      onSuccess,
     });
   };
 
   return (
     <button
-      className="py-3 px-8 bg-purple-800 rounded-md text-white cursor-pointer"
+      className="py-2.5 px-8 text-sm bg-purple-800 rounded-md text-white cursor-pointer"
       onClick={handleCheckout}
     >
-      Pay with Crypto
+      Pay with paytron
     </button>
   );
 };

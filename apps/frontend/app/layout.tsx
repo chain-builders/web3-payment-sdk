@@ -1,16 +1,58 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
+import localFont from "next/font/local";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+
+const clashDisplay = localFont({
+  src: [
+    {
+      path: "../public/fonts/ClashDisplay-Light.otf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/ClashDisplay-Regular.otf", 
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/ClashDisplay-Bold.otf",
+      weight: "700",
+      style: "normal",
+    }
+  ],
+  variable: "--font-clash-display",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const ceraPro = localFont({
+  src: [
+    {
+      path: "../public/fonts/CeraPro-Regular.otf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/CeraPro-Medium.otf",
+      weight: "500",
+      style: "medium",
+    },
+    {
+      path: "../public/fonts/CeraPro-Bold.otf",
+      style: "bold",
+    },
+  ],
+  variable: "--font-cera-pro",
 });
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap',
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+});
+
+
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -24,9 +66,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${ceraPro.variable} ${outfit.className} ${clashDisplay.variable} font- antialiased`}>
         {children}
       </body>
     </html>
