@@ -64,7 +64,9 @@ const Dashboard = () => {
     (item) => item.token === currencyTab
   );
 
-  const firstFiveTrx = filteredByCurrency?.slice(0, 5).map((item) => ({
+  // const uniqueAppNames = Array.from(new Set(payments?.map((item) => item.appName)));
+
+  const firstFiveTrx = payments?.slice(0, 5).map((item) => ({
     appName: item.appName,
     amount: item.amount,
     currency: item.token,
