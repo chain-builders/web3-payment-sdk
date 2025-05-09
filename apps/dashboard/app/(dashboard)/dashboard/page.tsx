@@ -1,5 +1,6 @@
 "use client";
 import { AppSelect } from "@/components/dashboard/AppSelect";
+import { WithdrawModal } from "@/components/dashboard/WithdrawalModal";
 import {
   useGetPayments,
   useGetUsdcBalance,
@@ -39,8 +40,7 @@ const Dashboard = () => {
 
   const [currencyTab, setCurrencyTab] = React.useState<1 | 2>(1);
 
-
-  
+  const [withdrawOpen, setWithdrawOpen] = React.useState(false);
 
   const uniqueAppNames = Array.from(
     new Set(payments?.map((item) => item.appName))
@@ -52,8 +52,8 @@ const Dashboard = () => {
     ? payments?.filter((item) => item.appName === selectedApp)
     : payments;
 
-
-  const totalRaw = filteredPayments?.reduce((acc, item) => acc + item.amount, 0n) ?? 0n;
+  const totalRaw =
+    filteredPayments?.reduce((acc, item) => acc + item.amount, 0n) ?? 0n;
   const totalUsd = Number(totalRaw) / 1e6;
 
   const formattedUsd = totalUsd.toLocaleString(undefined, {
@@ -127,7 +127,10 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="">
-            <button className="py-2 px-4 rounded-full bg-white text-black text-sm font-clash-display">
+            <button
+              onClick={() => setWithdrawOpen(true)}
+              className="py-2 px-4 rounded-full bg-white text-black text-sm font-clash-display cursor-pointer"
+            >
               Withdraw funds
             </button>
           </div>
@@ -209,6 +212,11 @@ const Dashboard = () => {
           View all transactions
         </div>
       </div>
+
+      <WithdrawModal
+        open={withdrawOpen}
+        onClose={() => setWithdrawOpen(false)}
+      />
     </div>
   );
 };
