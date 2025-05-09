@@ -12,13 +12,19 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
 
     enum Token {
         USDC,
-        USDT        
+        USDT
+    }
+
+    struct Payment {
+        uint256 amount;
+        Token token;
+        string appName;
     }
 
     address public immutable usdc;
     address public immutable usdt;
-    // address public immutable custom_token;
 
+    mapping(address => Payment[]) private userPayments;
     mapping(address => mapping(Token => uint256)) private users;
 
     /**
@@ -27,7 +33,10 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
      * @param _token Token enum (USDC, USDT, or CUSTOM_TOKEN)
      * @return uint256 Balance of the specified token for the user
      */
-    function getBalance(address _user, Token _token) external view returns (uint256) {
+    function getBalance(
+        address _user,
+        Token _token
+    ) external view returns (uint256) {
         return users[_user][_token];
     }
     mapping(Token => uint256) public totalFeesCollected;
@@ -36,7 +45,8 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
         address indexed from,
         address indexed to,
         Token indexed token,
-        uint256 amount
+        uint256 amount,
+        string appName
     );
 
     event TokensWithdrawn(
@@ -58,14 +68,30 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
         paused() ? _unpause() : _pause();
     }
 
-    function transferFrom(Token _token, address, uint256 _amount) external payable whenNotPaused nonReentrant {
-        require(
-            _amount > 0, "Invalid amount"
-        );
+    function transferFrom(
+        Token _token,
+        string calldata _appName,
+        uint256 _amount,
+        address _recipient
+    ) external payable whenNotPaused nonReentrant {
+        require(_amount > 0, "Invalid amount");
+        require(_recipient != address(0), "Invalid recipient");
         address tokenAddr = _getTokenAddress(_token);
         IERC20(tokenAddr).safeTransferFrom(msg.sender, address(this), _amount);
-        users[msg.sender][_token] += _amount; 
-        emit TokensTransferred(msg.sender, address(this), _token, _amount);
+
+        userPayments[_recipient].push(
+            Payment({amount: _amount, token: _token, appName: _appName})
+        );
+
+        users[_recipient][_token] += _amount;
+
+        emit TokensTransferred(
+            msg.sender,
+            _recipient,
+            _token,
+            _amount,
+            _appName
+        );
     }
 
     function withdraw(Token _token) external nonReentrant {
@@ -82,5 +108,11 @@ contract Contract is Ownable, Pausable, ReentrancyGuard {
         if (token == Token.USDC) return usdc;
         if (token == Token.USDT) return usdt;
         revert("Unsupported token");
+    }
+
+    function getPayments(
+        address _user
+    ) external view returns (Payment[] memory) {
+        return userPayments[_user];
     }
 }
