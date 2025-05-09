@@ -17,7 +17,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  onError,
+  // onError,
   config,
   options,
 }) => {
@@ -75,7 +75,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             </motion.span>
             <div className="relative bg-white rounded-2xl overflow-hidden w-[510px] min-h-[450px] max-[500px] mx-4 ">
               <div className="sticky z-20 w-full flex items-center p-6">
-                <div className="w-full flex gap-8  justify-center items-center tex-xs text-gray-900 text-sm cursor-pointer">
+                {/* <div className="w-full flex gap-8  justify-center items-center tex-xs text-gray-900 text-sm cursor-pointer">
                   {["from wallet", "wallet transfer", " offramp payment"].map(
                     (item, index) => (
                       <p
@@ -91,7 +91,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                       </p>
                     )
                   )}
-                </div>
+                </div> */}
               </div>
 
               {activeTab === 0 && (

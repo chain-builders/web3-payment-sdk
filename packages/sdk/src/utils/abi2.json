@@ -3,21 +3,9 @@
     "type": "constructor",
     "inputs": [
       { "name": "_usdc", "type": "address", "internalType": "address" },
-      { "name": "_usdt", "type": "address", "internalType": "address" },
-      {
-        "name": "_custom_token",
-        "type": "address",
-        "internalType": "address"
-      }
+      { "name": "_usdt", "type": "address", "internalType": "address" }
     ],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "custom_token",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -31,6 +19,30 @@
       }
     ],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPayments",
+    "inputs": [
+      { "name": "_user", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct Contract.Payment[]",
+        "components": [
+          { "name": "amount", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "token",
+            "type": "uint8",
+            "internalType": "enum Contract.Token"
+          },
+          { "name": "appName", "type": "string", "internalType": "string" }
+        ]
+      }
+    ],
     "stateMutability": "view"
   },
   {
@@ -79,7 +91,7 @@
         "type": "uint8",
         "internalType": "enum Contract.Token"
       },
-      { "name": "_from", "type": "address", "internalType": "address" },
+      { "name": "_appName", "type": "string", "internalType": "string" },
       { "name": "_amount", "type": "uint256", "internalType": "uint256" }
     ],
     "outputs": [],
@@ -180,6 +192,12 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      },
+      {
+        "name": "appName",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
       }
     ],
     "anonymous": false

@@ -1,7 +1,6 @@
 export interface PaymentConfig {
   walletAddress: string;
-  chainId?: number;
-  apiKey?: string;
+  appName: string;
   theme?: {
     primaryColor?: string;
     secondaryColor?: string;

@@ -9,7 +9,7 @@ createRoot(document.getElementById("root")!).render(
     <PaymentProvider
       config={{
         walletAddress: "0xCe2682E44734b96361BD0d7B0DEC01D2AB82adcF",
-        chainId: 1,
+        appName: "ecommerce chan ching",
         theme: {
           primaryColor: "#3B82F6",
         },

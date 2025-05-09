@@ -20,7 +20,7 @@ export const usePay = () => {
     const result = writeContract({
       ...wagmiContractConfig,
       functionName: "transferFrom",
-      args: [1, address, amount],
+      args: [1, address, amount, config.appName],
     });
 
     return result;

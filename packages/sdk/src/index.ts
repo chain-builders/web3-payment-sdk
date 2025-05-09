@@ -12,5 +12,4 @@ export * from "./types/index.ts";
 // Export utilities
 export * from "./utils/index.ts";
 
-// Import CSS if you have a main CSS file
 import "./index.css";
