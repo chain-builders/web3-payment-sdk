@@ -1,4 +1,5 @@
 "use client";
+import { AppSelect } from "@/components/dashboard/AppSelect";
 import {
   useGetPayments,
   useGetUsdcBalance,
@@ -16,44 +17,10 @@ export interface Ipayment {
 }
 
 const Dashboard = () => {
-  const transactions = [
-    {
-      amount: "20.00",
-      hash: "0xCe2682E44734b96361BD...",
-      type: "User Payment",
-      status: "received",
-    },
-    {
-      amount: "50.00",
-      hash: "0xFa9923E55834c87251AC...",
-      type: "Wallet Withdrawal",
-      status: "sent",
-    },
-    {
-      amount: "15.00",
-      hash: "0xBb7834F66945d82341EF...",
-      type: "User Payment",
-      status: "received",
-    },
-    {
-      amount: "100.00",
-      hash: "0xAc4512D88967e12389GH...",
-      type: "Wallet Withdrawal",
-      status: "sent",
-    },
-    {
-      amount: "35.00",
-      hash: "0xDe8845K77856f45672JK...",
-      type: "User Payment",
-      status: "received",
-    },
-    {
-      amount: "75.00",
-      hash: "0xMn9956L88967p56783OP...",
-      type: "Wallet Withdrawal",
-      status: "sent",
-    },
-  ];
+  enum TOKENS {
+    usdt = "USDT",
+    usdc = "USDT",
+  }
 
   const { usdtBalance, loadingUsdtBalance } = useGetUsdtBalance();
 
@@ -65,21 +32,45 @@ const Dashboard = () => {
     ? (Number(usdtBalance) / 1e6).toLocaleString()
     : "0.00";
 
-  const totalRaw = payments?.reduce((acc, item) => acc + item.amount, 0n);
+  const usdtLogo =
+    "https://cdn.vectorstock.com/i/1000v/63/71/tether-symbol-icon-usdt-logo-crypto-vector-41056371.jpg";
+  const usdcLogo =
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ43MuDqq54iD1ZCRL_uthAPkfwSSL-J5qI_Q&s";
+
+  const [currencyTab, setCurrencyTab] = React.useState<1 | 2>(1);
+
+
+  
+
+  const uniqueAppNames = Array.from(
+    new Set(payments?.map((item) => item.appName))
+  );
+  const [selectedApp, setSelectedApp] = React.useState<string | null>(
+    uniqueAppNames[0] || null
+  );
+  const filteredPayments = selectedApp
+    ? payments?.filter((item) => item.appName === selectedApp)
+    : payments;
+
+
+  const totalRaw = filteredPayments?.reduce((acc, item) => acc + item.amount, 0n) ?? 0n;
   const totalUsd = Number(totalRaw) / 1e6;
 
   const formattedUsd = totalUsd.toLocaleString(undefined, {
     style: "currency",
     currency: "USD",
   });
+  const filteredByCurrency = filteredPayments?.filter(
+    (item) => item.token === currencyTab
+  );
 
-  const uniqueAppNames = Array.from(new Set(payments?.map((item) => item.appName)));
+  // const uniqueAppNames = Array.from(new Set(payments?.map((item) => item.appName)));
 
-  const firstFiveTrx = (payments || []).slice(0, 5).map((item) => ({
+  const firstFiveTrx = payments?.slice(0, 5).map((item) => ({
     appName: item.appName,
     amount: item.amount,
     currency: item.token,
-    type: 'User Paymentt'
+    type: "User Payment",
   }));
 
   if (loadingpayments) {
@@ -108,7 +99,13 @@ const Dashboard = () => {
           </p>
         </div>
 
-        <div className=""></div>
+        <div>
+          <AppSelect
+            apps={uniqueAppNames}
+            selected={selectedApp}
+            onSelect={setSelectedApp}
+          />
+        </div>
       </header>
       <div
         className="  bg-purple-800 rounded-2xl py-6 px-8 text-white"
@@ -143,61 +140,76 @@ const Dashboard = () => {
         Activity overview
       </h1>
       <hr className="border border-gray-300" />
-      <div className="w-full flex flex-col mt-2 gap-6  px-4">
-        {firstFiveTrx.map((transaction, index) => (
-          <div key={index} className="flex justify-between items-center">
-            <div className="">
-              <h4 className="font-clash-display">{transaction.amount} USDT</h4>
-              <p className="text-sm text-gray-500">Token - {transaction.currency}</p>
-            </div>
 
-            <div
-              className={`font-clash-display py-1 text-xs px-4 ${
-                transaction.type === "User Payment"
-                  ? "bg-purple-600/20 text-purple-600 border-purple-600"
-                  : "bg-red-600/20 text-red-600 border-red-600"
-              } rounded-full`}
-            >
-              <h4>{transaction.type}</h4>
-            </div>
+      {/* Currency Tabs */}
+      <div className="flex gap-6 px-4 mt-2">
+        <button
+          className={`flex items-center gap-2 px-5 py-2 rounded-full font-clash-display text-sm font-semibold transition-all ${
+            currencyTab === 1
+              ? "bg-purple-700 text-white "
+              : "bg-gray-200 text-gray-700"
+          }`}
+          onClick={() => setCurrencyTab(1)}
+        >
+          <img src={usdtLogo} alt="USDT" className="w-5 h-5 rounded-full" />
+          USDT
+        </button>
+        <button
+          className={`flex items-center gap-2 px-5 py-2 rounded-full font-clash-display text-sm font-semibold transition-all ${
+            currencyTab === 2
+              ? "bg-purple-700 text-white shadow-lg"
+              : "bg-gray-200 text-gray-700"
+          }`}
+          onClick={() => setCurrencyTab(2)}
+        >
+          <img src={usdcLogo} alt="USDC" className="w-5 h-5 rounded-full" />
+          USDC
+        </button>
+      </div>
 
+      <div className="w-full flex flex-col mt-3 px-4">
+        {firstFiveTrx && firstFiveTrx.length > 0 ? (
+          firstFiveTrx.map((transaction, index) => (
             <div
-              className={`h-10 w-10 ${
-                transaction.type === "User Payment"
-                  ? "bg-green-600/10 text-green-600"
-                  : "bg-red-600/10 text-red-600"
-              } flex items-center justify-center rounded-full`}
+              key={index}
+              className="flex items-center justify-between bg-white rounded-xl px-6 py-4 transition"
             >
-              {transaction.type === "User Payment" ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="size-5"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M14.78 5.22a.75.75 0 0 0-1.06 0L6.5 12.44V6.75a.75.75 0 0 0-1.5 0v7.5c0 .414.336.75.75.75h7.5a.75.75 0 0 0 0-1.5H7.56l7.22-7.22a.75.75 0 0 0 0-1.06Z"
-                    clipRule="evenodd"
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
+                  <img
+                    src={transaction.currency === 1 ? usdtLogo : usdcLogo}
+                    alt={transaction.currency === 1 ? "USDT" : "USDC"}
+                    className="w-7 h-7 rounded-full"
                   />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="size-5"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.22 14.78a.75.75 0 001.06 0l7.22-7.22v5.69a.75.75 0 001.5 0v-7.5a.75.75 0 00-.75-.75h-7.5a.75.75 0 000 1.5h5.69l-7.22 7.22a.75.75 0 000 1.06z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
+                </div>
+                <div>
+                  <h4 className="font-clash-display text-md font-semibold text-gray-600">
+                    {(Number(transaction.amount) / 1e6).toLocaleString()}{" "}
+                    {transaction.currency === 1 ? "USDT" : "USDC"}
+                  </h4>
+                  <p className="text-xs text-gray-500">{transaction.appName}</p>
+                </div>
+              </div>
+              <div
+                className={`font-clash-display py-1 text-xs px-4 rounded-full border ${
+                  transaction.type === "User Payment"
+                    ? "bg-purple-600/20 text-purple-600 border-purple-600"
+                    : "bg-green-600/20 text-green-600 border-green-600"
+                }`}
+              >
+                <h4>{transaction.type}</h4>
+              </div>
             </div>
+          ))
+        ) : (
+          <div className="text-gray-400 font-clash-display text-center py-8">
+            No transactions for this currency yet.
           </div>
-        ))}
+        )}
+
+        <div className="font-clash-display text-purple-800 mt-4 cursor-pointer hover:underline text-center">
+          View all transactions
+        </div>
       </div>
     </div>
   );
